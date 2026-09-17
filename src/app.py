@@ -63,7 +63,7 @@ def cached_get_cards(deck_id):
 def cached_get_tratak_history():
     return db.get_tratak_history()
 
-st.title("📇 Flashcards!")
+st.title("📇 Flashcards@")
 st.markdown("> *\"That's how knowledge works. It builds up, like compound interest.\" - Warren Buffett*")
 
 # Navigation Sidebar
