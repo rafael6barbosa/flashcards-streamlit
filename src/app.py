@@ -7,7 +7,7 @@ import db
 # Initialize the database on startup
 db.init_db()
 
-st.set_page_config(page_title="Flashcardsteste", page_icon="📇", layout="wide")
+st.set_page_config(page_title="Flashcards", page_icon="📇", layout="wide")
 
 # Custom CSS para melhor responsividade
 st.markdown("""
@@ -63,7 +63,7 @@ def cached_get_cards(deck_id):
 def cached_get_tratak_history():
     return db.get_tratak_history()
 
-st.title("📇 Flashcards")
+st.title("📇 Flashcards!")
 st.markdown("> *\"That's how knowledge works. It builds up, like compound interest.\" - Warren Buffett*")
 
 # Navigation Sidebar
