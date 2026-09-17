@@ -6,12 +6,16 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
-# Fetch variables
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_connection():
-    """Cria e retorna uma conexão com o banco PostgreSQL no Supabase."""
-    return psycopg2.connect(DATABASE_URL)
+    # Tenta pegar do st.secrets (Streamlit Cloud), se não achar pega do os.getenv (local)
+    db_url = st.secrets.get("DATABASE_URL", os.getenv("DATABASE_URL"))
+    
+    if not db_url:
+        raise ValueError("DATABASE_URL não foi encontrada nas variáveis de ambiente nem nos Secrets.")
+        
+    return psycopg2.connect(db_url)
+
 
 def init_db():
     conn = get_connection()
