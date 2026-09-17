@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import streamlit as st  # <--- Adicione esta linha
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
