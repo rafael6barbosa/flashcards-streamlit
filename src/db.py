@@ -3,6 +3,9 @@ import psycopg2
 import streamlit as st  # <--- Adicione esta linha
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
+from datetime import datetime, timezone
+
+
 
 # Load environment variables from .env
 load_dotenv()
@@ -212,8 +215,7 @@ def get_cards_prioritized(deck_id):
     c.close()
     conn.close()
     
-    from datetime import datetime
-    
+
     prioritized = []
     for row in results:
         card_id, d_id, front, back, tags, last_review_val, total_reviews, errors = row
@@ -230,9 +232,14 @@ def get_cards_prioritized(deck_id):
                 try:
                     last_rev_date = datetime.strptime(str(last_review_val), '%Y-%m-%d %H:%M:%S')
                 except ValueError:
-                    last_rev_date = datetime.now()
+                    last_rev_date = datetime.now(timezone.utc)
                 
-            days_since = (datetime.now() - last_rev_date).days
+            # Garante que ambas as datas tenham fuso horário para permitir a subtração
+            now = datetime.now(timezone.utc)
+            if last_rev_date.tzinfo is None:
+                last_rev_date = last_rev_date.replace(tzinfo=timezone.utc)
+
+            days_since = (now - last_rev_date).days
             errors_rate = errors / total_reviews if total_reviews > 0 else 0
             
             weight = days_since + (errors_rate * 10)
@@ -244,6 +251,7 @@ def get_cards_prioritized(deck_id):
             'tags': tags,
             'weight': weight
         })
+
         
     prioritized.sort(key=lambda x: x['weight'], reverse=True)
     return prioritized
