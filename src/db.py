@@ -278,7 +278,7 @@ def get_deck_performance(deck_id):
     
     query_cards = '''
     SELECT 
-        c.id, c.front, MAX(r.reviewed_at) as last_seen
+        c.id, c.front, c.back, MAX(r.reviewed_at) as last_seen
     FROM cards c
     LEFT JOIN card_reviews r ON c.id = r.card_id
     WHERE c.deck_id = %s
