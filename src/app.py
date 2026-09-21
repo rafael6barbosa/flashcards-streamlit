@@ -190,7 +190,7 @@ elif choice == "Desempenho":
                 cards_stats = stats['cards']
                 df = pd.DataFrame(cards_stats, columns=['ID', 'Frente', 'Verso','Última Vez Visto'])
                 df['Última Vez Visto'] = df['Última Vez Visto'].fillna('Nunca')
-                st.dataframe(df, hide_index=True, use_container_width=True)
+                st.dataframe(df, hide_index=True, use_container_width=True,height="content")
             else:
                 st.info("Nenhuma revisão feita neste deck ainda. Comece a estudar!")
         else:
