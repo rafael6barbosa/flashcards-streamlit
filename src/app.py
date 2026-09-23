@@ -586,6 +586,15 @@ elif choice == "Gerenciar Questões":
         st.warning("Nenhuma coleção criada.")
 
 elif choice == "Meditação":
+    # Oculta o indicador de estado de execução (Status Widget / st.rerun)
+    st.markdown("""
+        <style>
+        div[data-testid="stStatusWidget"] {
+            visibility: hidden;
+            display: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     st.header("🧘 Meditação")
     meditation_mode = st.radio(
         "Escolha a prática",
