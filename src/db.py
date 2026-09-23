@@ -232,6 +232,22 @@ def add_question(deck_id, pergunta, opcoes, resposta):
             conn.commit()
 
 
+def bulk_insert_questions(deck_id, questions_list):
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            for question in questions_list:
+                c.execute(
+                    "INSERT INTO questions (deck_id, pergunta, opcoes, resposta) VALUES (%s, %s, %s, %s)",
+                    (
+                        deck_id,
+                        question["pergunta"],
+                        json.dumps(question["opcoes"]),
+                        question["resposta"],
+                    ),
+                )
+            conn.commit()
+
+
 def delete_question(question_id):
     with get_connection() as conn:
         with conn.cursor() as c:

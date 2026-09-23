@@ -72,7 +72,7 @@ st.markdown("> *\"That's how knowledge works. It builds up, like compound intere
 
 # Navigation Sidebar
 st.sidebar.title("Navegação")
-menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak"]
+menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak"]
 choice = st.sidebar.radio("Ir para", menu)
 
 if choice == "Estudar":
@@ -316,6 +316,73 @@ elif choice == "Upload de Cards":
                             st.success(f"{len(cards_list)} cards inseridos com sucesso!")
                 except Exception as e:
                     st.error(f"Ocorreu um erro ao ler o arquivo: {e}")
+        else:
+            st.warning("Nenhum deck nesta coleção. Crie um deck primeiro.")
+    else:
+        st.warning("Nenhuma coleção criada.")
+
+elif choice == "Upload de Questões":
+    st.header("Upload de Questões (CSV / JSON)")
+    st.markdown(
+        "Use `pergunta`, `opcao_a`, `opcao_b`, `opcao_c`, `opcao_d` e `resposta`. "
+        "A resposta deve ser A, B, C ou D."
+    )
+
+    collections = cached_get_collections()
+    if collections:
+        coll_dict = {c[1]: c[0] for c in collections}
+        selected_coll = st.selectbox("Selecione a Coleção Base", list(coll_dict.keys()), key="question_upload_coll")
+        decks = cached_get_decks(coll_dict[selected_coll])
+
+        if decks:
+            deck_dict = {d[2]: d[0] for d in decks}
+            selected_deck = st.selectbox("Selecione o Deck de Destino", list(deck_dict.keys()), key="question_upload_deck")
+            uploaded_file = st.file_uploader(
+                "Escolha um arquivo CSV ou JSON",
+                type=["csv", "json"],
+                key="question_upload_file",
+            )
+
+            if uploaded_file is not None:
+                try:
+                    questions_list = []
+                    if uploaded_file.name.endswith(".csv"):
+                        data = pd.read_csv(uploaded_file).fillna("").to_dict("records")
+                    else:
+                        data = json.load(uploaded_file)
+
+                    for item in data:
+                        options = item.get("opcoes")
+                        if isinstance(options, str):
+                            options = json.loads(options)
+                        if not isinstance(options, dict):
+                            options = {
+                                "A": str(item.get("opcao_a", "")),
+                                "B": str(item.get("opcao_b", "")),
+                                "C": str(item.get("opcao_c", "")),
+                                "D": str(item.get("opcao_d", "")),
+                            }
+
+                        answer = str(item.get("resposta", "")).strip().upper()
+                        question = str(item.get("pergunta", "")).strip()
+                        options = {key: str(options.get(key, "")).strip() for key in ["A", "B", "C", "D"]}
+                        if question and all(options.values()) and answer in options:
+                            questions_list.append({
+                                "pergunta": question,
+                                "opcoes": options,
+                                "resposta": answer,
+                            })
+
+                    if questions_list:
+                        st.write(f"{len(questions_list)} questões lidas do arquivo.")
+                        if st.button("Iniciar Importação", use_container_width=True, key="import_questions"):
+                            db.bulk_insert_questions(deck_dict[selected_deck], questions_list)
+                            st.cache_data.clear()
+                            st.success(f"{len(questions_list)} questões inseridas com sucesso!")
+                    else:
+                        st.warning("Nenhuma questão válida foi encontrada no arquivo.")
+                except (ValueError, json.JSONDecodeError) as error:
+                    st.error(f"Erro no formato do arquivo: {error}")
         else:
             st.warning("Nenhum deck nesta coleção. Crie um deck primeiro.")
     else:
