@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import time
 import db
+from solidos_platonicos import circulo_svg, solidos_platonicos
 
 # Initialize the database on startup
 db.init_db()
@@ -95,7 +96,7 @@ st.sidebar.caption(st.session_state.authenticated_user["email"])
 if st.sidebar.button("Sair", use_container_width=True):
     st.session_state.authenticated_user = None
     st.rerun()
-menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak"]
+menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak", "Sólidos Platônicos"]
 choice = st.sidebar.radio("Ir para", menu)
 
 if choice == "Estudar":
@@ -622,18 +623,7 @@ elif choice == "Tratak":
     mins, secs = divmod(remaining, 60)
     timer_text = f"{mins:02d}:{secs:02d}"
 
-    # SVG responsivo — usa viewport responsivo
-    svg_html = """
-    <div style="display:flex; flex-direction:column; align-items:center; margin: 28px 0 8px 0; width: 100%;">
-      <svg viewBox="0 0 1000 1000" style="width: 100%; max-width: 500px; height: auto;">
-        <!-- Main circle -->
-        <circle cx="500" cy="500" r="350" fill="white" stroke="#3949ab" stroke-width="5"/>
-        <!-- Focus dot -->
-        <circle cx="500" cy="500" r="10" fill="#1a237e"/>
-      </svg>
-    </div>
-    """
-    st.markdown(svg_html, unsafe_allow_html=True)
+    st.markdown(circulo_svg, unsafe_allow_html=True)
 
     # ── Cronômetro separado ────────────────────────────────────────────────────
     timer_html = f"""
@@ -735,4 +725,20 @@ elif choice == "Tratak":
             )
     else:
         st.info("Nenhuma sessão registrada ainda. Complete sua primeira prática!")
+
+elif choice == "Sólidos Platônicos":
+    st.header("Sólidos Platônicos")
+    solid_names = ["tetraedro", "cubo", "octaedro", "dodecaedro", "icosaedro"]
+    solid_index = int(time.time()) % len(solid_names)
+    solid_name = solid_names[solid_index]
+    solid_labels = {
+        "tetraedro": "Tetraedro",
+        "cubo": "Cubo",
+        "octaedro": "Octaedro",
+        "dodecaedro": "Dodecaedro",
+        "icosaedro": "Icosaedro",
+    }
+
+    st.subheader(solid_labels[solid_name])
+    st.markdown(solidos_platonicos[solid_name], unsafe_allow_html=True)
 
