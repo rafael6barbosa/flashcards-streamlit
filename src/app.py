@@ -96,7 +96,7 @@ st.sidebar.caption(st.session_state.authenticated_user["email"])
 if st.sidebar.button("Sair", use_container_width=True):
     st.session_state.authenticated_user = None
     st.rerun()
-menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak", "Sólidos Platônicos"]
+menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Meditação"]
 choice = st.sidebar.radio("Ir para", menu)
 
 if choice == "Estudar":
@@ -585,8 +585,31 @@ elif choice == "Gerenciar Questões":
     else:
         st.warning("Nenhuma coleção criada.")
 
-elif choice == "Tratak":
-    st.header("🔵 Tratak")
+elif choice == "Meditação":
+    st.header("🧘 Meditação")
+    meditation_mode = st.radio(
+        "Escolha a prática",
+        ["Tratak", "Sólidos Platônicos"],
+        horizontal=True,
+        key="meditation_mode",
+    )
+
+    if meditation_mode == "Sólidos Platônicos":
+        solid_names = ["tetraedro", "cubo", "octaedro", "dodecaedro", "icosaedro"]
+        solid_index = int(time.time()) % len(solid_names)
+        solid_name = solid_names[solid_index]
+        solid_labels = {
+            "tetraedro": "Tetraedro",
+            "cubo": "Cubo",
+            "octaedro": "Octaedro",
+            "dodecaedro": "Dodecaedro",
+            "icosaedro": "Icosaedro",
+        }
+        st.subheader(solid_labels[solid_name])
+        st.markdown(solidos_platonicos[solid_name], unsafe_allow_html=True)
+        st.stop()
+
+    st.subheader("🔵 Tratak")
     st.markdown("""
     > *Tratak é uma prática de meditação em que você foca o olhar num único ponto sem piscar.*  
     > Escolha a duração, inicie e mantenha o foco no ponto central do círculo.
@@ -726,19 +749,4 @@ elif choice == "Tratak":
     else:
         st.info("Nenhuma sessão registrada ainda. Complete sua primeira prática!")
 
-elif choice == "Sólidos Platônicos":
-    st.header("Sólidos Platônicos")
-    solid_names = ["tetraedro", "cubo", "octaedro", "dodecaedro", "icosaedro"]
-    solid_index = int(time.time()) % len(solid_names)
-    solid_name = solid_names[solid_index]
-    solid_labels = {
-        "tetraedro": "Tetraedro",
-        "cubo": "Cubo",
-        "octaedro": "Octaedro",
-        "dodecaedro": "Dodecaedro",
-        "icosaedro": "Icosaedro",
-    }
-
-    st.subheader(solid_labels[solid_name])
-    st.markdown(solidos_platonicos[solid_name], unsafe_allow_html=True)
 
