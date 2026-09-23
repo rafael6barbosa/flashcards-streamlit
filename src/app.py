@@ -9,6 +9,25 @@ db.init_db()
 
 st.set_page_config(page_title="Flashcards", page_icon="📇", layout="wide")
 
+if "authenticated_user" not in st.session_state:
+    st.session_state.authenticated_user = None
+
+if st.session_state.authenticated_user is None:
+    st.title("Login")
+    with st.form("login_form"):
+        email = st.text_input("E-mail")
+        password = st.text_input("Senha", type="password")
+        submitted = st.form_submit_button("Entrar", use_container_width=True)
+
+    if submitted:
+        user = db.authenticate_user(email, password)
+        if user:
+            st.session_state.authenticated_user = user
+            st.rerun()
+        else:
+            st.error("E-mail ou senha inválidos.")
+    st.stop()
+
 # Custom CSS para melhor responsividade
 st.markdown("""
 <style>
@@ -72,6 +91,10 @@ st.markdown("> *\"That's how knowledge works. It builds up, like compound intere
 
 # Navigation Sidebar
 st.sidebar.title("Navegação")
+st.sidebar.caption(st.session_state.authenticated_user["email"])
+if st.sidebar.button("Sair", use_container_width=True):
+    st.session_state.authenticated_user = None
+    st.rerun()
 menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Upload de Questões", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak"]
 choice = st.sidebar.radio("Ir para", menu)
 

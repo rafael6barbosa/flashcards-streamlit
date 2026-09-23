@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
+import hashlib
+import hmac
 import json
 import os
+import secrets
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -98,9 +101,80 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     conn.commit()
     c.close()
     conn.close()
+
+    admin_email = _get_secret("ADMIN_EMAIL")
+    admin_password = _get_secret("ADMIN_PASSWORD")
+    if admin_email and admin_password:
+        create_user(admin_email, admin_password)
+
+
+def _get_secret(name):
+    try:
+        if name in st.secrets:
+            return st.secrets[name]
+    except Exception:
+        pass
+    return os.getenv(name)
+
+
+def _hash_password(password, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 120000
+    ).hex()
+    return f"{salt}${digest}"
+
+
+def _verify_password(password, stored_hash):
+    try:
+        salt, expected_digest = stored_hash.split("$", 1)
+    except ValueError:
+        return False
+    actual_digest = _hash_password(password, salt).split("$", 1)[1]
+    return hmac.compare_digest(actual_digest, expected_digest)
+
+
+def create_user(email, password):
+    email = email.strip().lower()
+    if not email or not password:
+        return False
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as c:
+                c.execute(
+                    "INSERT INTO users (email, password_hash) VALUES (%s, %s) ON CONFLICT (email) DO NOTHING",
+                    (email, _hash_password(password)),
+                )
+                conn.commit()
+                return c.rowcount == 1
+    except psycopg2.Error:
+        return False
+
+
+def authenticate_user(email, password):
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                "SELECT id, email, password_hash FROM users WHERE email = %s",
+                (email.strip().lower(),),
+            )
+            user = c.fetchone()
+
+    if user and _verify_password(password, user[2]):
+        return {"id": user[0], "email": user[1]}
+    return None
 
 
 # --- Collections ---
