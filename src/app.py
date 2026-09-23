@@ -594,21 +594,6 @@ elif choice == "Meditação":
         key="meditation_mode",
     )
 
-    if meditation_mode == "Sólidos Platônicos":
-        solid_names = ["tetraedro", "cubo", "octaedro", "dodecaedro", "icosaedro"]
-        solid_index = int(time.time()) % len(solid_names)
-        solid_name = solid_names[solid_index]
-        solid_labels = {
-            "tetraedro": "Tetraedro",
-            "cubo": "Cubo",
-            "octaedro": "Octaedro",
-            "dodecaedro": "Dodecaedro",
-            "icosaedro": "Icosaedro",
-        }
-        st.subheader(solid_labels[solid_name])
-        st.markdown(solidos_platonicos[solid_name], unsafe_allow_html=True)
-        st.stop()
-
     st.subheader("🔵 Tratak")
     st.markdown("""
     > *Tratak é uma prática de meditação em que você foca o olhar num único ponto sem piscar.*  
@@ -646,7 +631,12 @@ elif choice == "Meditação":
     mins, secs = divmod(remaining, 60)
     timer_text = f"{mins:02d}:{secs:02d}"
 
-    st.markdown(circulo_svg, unsafe_allow_html=True)
+    if meditation_mode == "Tratak":
+        st.markdown(circulo_svg, unsafe_allow_html=True)
+    else:
+        solid_names = ["tetraedro", "cubo", "octaedro", "dodecaedro", "icosaedro"]
+        solid_name = solid_names[int(time.time()) % len(solid_names)]
+        st.markdown(solidos_platonicos[solid_name], unsafe_allow_html=True)
 
     # ── Cronômetro separado ────────────────────────────────────────────────────
     timer_html = f"""
