@@ -60,6 +60,10 @@ def cached_get_cards(deck_id):
     return db.get_cards(deck_id)
 
 @st.cache_data(ttl=60)
+def cached_get_questions(deck_id):
+    return db.get_questions(deck_id)
+
+@st.cache_data(ttl=60)
 def cached_get_tratak_history():
     return db.get_tratak_history()
 
@@ -68,7 +72,7 @@ st.markdown("> *\"That's how knowledge works. It builds up, like compound intere
 
 # Navigation Sidebar
 st.sidebar.title("Navegação")
-menu = ["Estudar", "Desempenho", "Upload de Cards", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Tratak"]
+menu = ["Estudar", "Estudar Questões", "Desempenho", "Upload de Cards", "Gerenciar Coleções & Decks", "Gerenciar Cards", "Gerenciar Questões", "Tratak"]
 choice = st.sidebar.radio("Ir para", menu)
 
 if choice == "Estudar":
@@ -148,6 +152,70 @@ if choice == "Estudar":
                 else:
                     if st.button("Revelar Resposta", use_container_width=True, key=f"reveal_{card['id']}"):
                         st.session_state.show_answer = True
+                        st.rerun()
+
+elif choice == "Estudar Questões":
+    st.header("Estudar Questões")
+    collections = cached_get_collections()
+    if not collections:
+        st.info("Nenhuma coleção encontrada. Vá para 'Gerenciar Coleções & Decks' para criar uma.")
+    else:
+        coll_dict = {c[1]: c[0] for c in collections}
+        selected_coll_name = st.selectbox("Selecione uma Coleção", list(coll_dict.keys()), key="question_study_coll")
+        decks = cached_get_decks(coll_dict[selected_coll_name])
+        if not decks:
+            st.info("Nenhum deck encontrado nesta coleção.")
+        else:
+            deck_dict = {d[2]: d[0] for d in decks}
+            selected_deck_name = st.selectbox("Selecione um Deck", list(deck_dict.keys()), key="question_study_deck")
+            questions = cached_get_questions(deck_dict[selected_deck_name])
+            if not questions:
+                st.info("Nenhuma questão encontrada neste deck. Cadastre uma em 'Gerenciar Questões'.")
+            else:
+                if 'current_question_index' not in st.session_state:
+                    st.session_state.current_question_index = 0
+                if st.session_state.current_question_index >= len(questions):
+                    st.session_state.current_question_index = 0
+
+                question = questions[st.session_state.current_question_index]
+                question_options = question[3]
+                option_keys = ["A", "B", "C", "D"]
+                available_options = {
+                    key: str(question_options.get(key, ""))
+                    for key in option_keys
+                    if question_options.get(key, "")
+                }
+
+                st.progress((st.session_state.current_question_index + 1) / len(questions))
+                st.caption(f"Questão {st.session_state.current_question_index + 1}/{len(questions)}")
+                st.subheader(question[2])
+                selected_answer = st.radio(
+                    "Escolha uma alternativa",
+                    list(available_options),
+                    format_func=lambda key: f"{key}) {available_options[key]}",
+                    key=f"question_answer_{question[0]}",
+                )
+
+                if 'question_feedback' not in st.session_state:
+                    st.session_state.question_feedback = None
+
+                if st.session_state.question_feedback is None:
+                    if st.button("Responder", use_container_width=True, key=f"answer_{question[0]}"):
+                        st.session_state.question_feedback = (
+                            selected_answer == question[4],
+                            question[4],
+                            available_options.get(question[4], question[4]),
+                        )
+                        st.rerun()
+                else:
+                    is_correct, correct_key, correct_text = st.session_state.question_feedback
+                    if is_correct:
+                        st.success("Resposta correta!")
+                    else:
+                        st.error(f"Resposta incorreta. A resposta correta é {correct_key}) {correct_text}.")
+                    if st.button("Próxima questão", use_container_width=True, key=f"next_question_{question[0]}"):
+                        st.session_state.current_question_index += 1
+                        st.session_state.question_feedback = None
                         st.rerun()
 
 elif choice == "Desempenho":
@@ -371,6 +439,60 @@ elif choice == "Gerenciar Cards":
                 st.info("Nenhum card neste deck.")
         else:
             st.warning("Nenhum deck encontrado.")
+
+elif choice == "Gerenciar Questões":
+    st.header("Gerenciar Questões")
+    collections = cached_get_collections()
+    if collections:
+        coll_dict = {c[1]: c[0] for c in collections}
+        selected_coll = st.selectbox("Coleção", list(coll_dict.keys()), key="question_manage_coll")
+        decks = cached_get_decks(coll_dict[selected_coll])
+
+        if decks:
+            deck_dict = {d[2]: d[0] for d in decks}
+            selected_deck = st.selectbox("Deck", list(deck_dict.keys()), key="question_manage_deck")
+            selected_deck_id = deck_dict[selected_deck]
+
+            with st.form("add_question_form"):
+                st.subheader("Adicionar Nova Questão")
+                pergunta = st.text_area("Pergunta")
+                option_a = st.text_input("Alternativa A")
+                option_b = st.text_input("Alternativa B")
+                option_c = st.text_input("Alternativa C")
+                option_d = st.text_input("Alternativa D")
+                resposta = st.selectbox("Resposta correta", ["A", "B", "C", "D"])
+                if st.form_submit_button("Adicionar Questão", use_container_width=True):
+                    options = {"A": option_a, "B": option_b, "C": option_c, "D": option_d}
+                    if pergunta and all(options.values()):
+                        db.add_question(selected_deck_id, pergunta, options, resposta)
+                        st.cache_data.clear()
+                        st.success("Questão adicionada!")
+                    else:
+                        st.warning("Pergunta e todas as quatro alternativas são obrigatórias.")
+
+            st.markdown("---")
+            st.subheader("Questões existentes no deck")
+            questions = cached_get_questions(selected_deck_id)
+            if questions:
+                question_rows = [
+                    [question[0], question[2], question[4]]
+                    for question in questions
+                ]
+                df = pd.DataFrame(question_rows, columns=["ID", "Pergunta", "Resposta"])
+                st.dataframe(df, hide_index=True, use_container_width=True)
+
+                question_to_delete = st.selectbox("Selecione o ID da questão para deletar", df["ID"].tolist())
+                if st.button("Deletar Questão Selecionada", type="primary", use_container_width=True):
+                    db.delete_question(question_to_delete)
+                    st.cache_data.clear()
+                    st.success(f"Questão {question_to_delete} deletada.")
+                    st.rerun()
+            else:
+                st.info("Nenhuma questão neste deck.")
+        else:
+            st.warning("Nenhum deck encontrado.")
+    else:
+        st.warning("Nenhuma coleção criada.")
 
 elif choice == "Tratak":
     st.header("🔵 Tratak")

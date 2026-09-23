@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 import os
 from dotenv import load_dotenv
 import psycopg2
@@ -63,6 +64,17 @@ def init_db():
             front TEXT NOT NULL,
             back TEXT NOT NULL,
             tags TEXT DEFAULT ''
+        )
+    """)
+
+    # Create Multiple-choice questions table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS questions (
+            id SERIAL PRIMARY KEY,
+            deck_id INTEGER REFERENCES decks(id) ON DELETE CASCADE,
+            pergunta TEXT NOT NULL,
+            opcoes JSONB NOT NULL,
+            resposta TEXT NOT NULL
         )
     """)
 
@@ -196,6 +208,34 @@ def bulk_insert_cards(deck_id, cards_list):
                     "INSERT INTO cards (deck_id, front, back, tags) VALUES (%s, %s, %s, %s)",
                     (deck_id, front, back, tags),
                 )
+            conn.commit()
+
+
+# --- Multiple-choice questions ---
+def get_questions(deck_id):
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                "SELECT id, deck_id, pergunta, opcoes, resposta FROM questions WHERE deck_id = %s ORDER BY id",
+                (deck_id,),
+            )
+            return c.fetchall()
+
+
+def add_question(deck_id, pergunta, opcoes, resposta):
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute(
+                "INSERT INTO questions (deck_id, pergunta, opcoes, resposta) VALUES (%s, %s, %s, %s)",
+                (deck_id, pergunta, json.dumps(opcoes), resposta),
+            )
+            conn.commit()
+
+
+def delete_question(question_id):
+    with get_connection() as conn:
+        with conn.cursor() as c:
+            c.execute("DELETE FROM questions WHERE id = %s", (question_id,))
             conn.commit()
 
 
